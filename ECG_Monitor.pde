@@ -1,11 +1,13 @@
 import processing.serial.*;
+
+
 Serial port;  // Create object from Serial class
 int val;      // Data received from the serial port
 int[] values;
 
 long oneHzSample=1000000/120;
 boolean serialInited=false;
-
+Handle handle;
 
 PFont myFont, timeFont, BPMFont;
 float shift=1;
@@ -16,9 +18,10 @@ int hour, minute, second;
 String heart="♥";
 float aux=0.5;//tweak
 boolean beat=true;
+int COM=0;
 
 void setup() {
-  // fullScreen();
+  //fullScreen();
   size(1200, 800);
   surface.setResizable(true);
   smooth();
@@ -27,40 +30,64 @@ void setup() {
   timeFont = createFont("S7display.ttf", 32);
   BPMFont = createFont("Calibri-Bold", 32);
   thread("timer");
+  thread("checkConnection");
+  handle = new Handle(width*0.025-(width*0.010), height*0.06, 0, width*0.01, height*0.01);
   initSerial();
 }
 
 void draw() {
-
   background(0);
+  //Comprobar conexion serie
+  //checkConnection();
 
-  checkConnection();
-
-
-
+  //Mostrar header
   header();
+
+  //Mostrar cuadrados laterales
   squares();
+
+  //Mostrar fecha y hora
   time();
+
+  //Mostrar informacion BMP
   BPMDisplay();
-  line(width*0.02, height*0.06, width*0.02, height*0.51);
+
+  //Mostrar señal ECG
   ECGdisplay();
+
+  //Actualizar y mostrar barra trigger
+  handle.update(width*0.025-(width*0.010), height*0.06, width*0.01, height*0.01);
+  handle.display(width*0.025-(width*0.010), height*0.06, width*0.01, height*0.01);
+}
+
+void mouseReleased() {
+  handle.releaseEvent();
 }
 
 void checkConnection() {
-  if (serialInited) {
-  } else {
-    initSerial();
+  while (true) {
+    if (serialInited) {
+      delay(2000);
+      if (port.last() == -1) {
+        port.stop();
+        serialInited=false;
+        initSerial();
+      }
+    } else {
+      serialInited=false;
+      initSerial();
+    }
   }
 }
+
 void initSerial() {
   try {
     port = new Serial(this, Serial.list()[1], 19200);
-    delay(100);
-    println("Serial communication inited");
+    //   println("Serial communication inited");
     serialInited=true;
   } 
   catch(RuntimeException e) {
-    println("Serial communication not inited");
+    //   println("Serial communication not inited");
     serialInited=false;
   }
 }
@@ -99,6 +126,12 @@ void header() {
   textFont(myFont, height*0.041);
   textAlign(CENTER, CENTER);
   text("ECG Monitor", width*0.5, height*0.020);
+  if (serialInited) {
+    fill(#0AFF39);
+  } else {
+    fill(#FF0000);
+  }
+  ellipse(width*0.99, height*0.025, height*0.02, height*0.02);
 }
 
 
@@ -143,11 +176,11 @@ void ECGdisplay() {
     values[i] = values[i+1];
   }
 
+  //Shift
   values[width-1] = val;
 
-
   stroke(#19AF3A);
-  strokeWeight(2);
+  //strokeWeight(2);
   //Muestra la señal ECG
   for (int x=1*round(width*0.28); x<width-(28); x++) {
     line((width-x), (height-aux*height-getY(values[x-1])), (width-1-x), height-aux*height-getY(values[x]));
