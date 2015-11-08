@@ -65,8 +65,10 @@ void mouseReleased() {
 }
 
 void checkConnection() {
+  int aux=0;
   while (true) {
     if (serialInited) {
+      println(port.last());
       delay(2000);
       if (port.last() == -1) {
         port.stop();
