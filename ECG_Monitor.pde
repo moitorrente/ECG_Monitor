@@ -4,10 +4,12 @@ import processing.serial.*;
 Serial port;  // Create object from Serial class
 int val;      // Data received from the serial port
 int[] values;
+int valTemp=0;
 
 long oneHzSample=1000000/120;
 boolean serialInited=false;
 Handle handle;
+Button button1, button2, button3, button4;
 
 PFont myFont, timeFont, BPMFont;
 float shift=1;
@@ -19,6 +21,8 @@ String heart="♥";
 float aux=0.5;//tweak
 boolean beat=true;
 int COM=0;
+
+
 
 void setup() {
   //fullScreen();
@@ -32,6 +36,10 @@ void setup() {
   thread("timer");
   thread("checkConnection");
   handle = new Handle(width*0.025-(width*0.010), height*0.06, 0, width*0.01, height*0.01);
+  button1 = new Button(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185, 5, 1);
+  button2 = new Button(width*0.75, height*0.296, (width*0.245)/2-width*0.002, height*0.23, 5, 1);
+  button3 = new Button(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185, 5, 2);
+  button4 = new Button(width*0.75, height*0.296, (width*0.245)/2-width*0.002, height*0.23, 5, 2);
   initSerial();
 }
 
@@ -58,14 +66,43 @@ void draw() {
   //Actualizar y mostrar barra trigger
   handle.update(width*0.025-(width*0.010), height*0.06, width*0.01, height*0.01);
   handle.display(width*0.025-(width*0.010), height*0.06, width*0.01, height*0.01);
+
+  //Actualizar y mostrar los botones
+  button1.update();
+  button1.display(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185/2, 5, "100");
+  button2.update();
+  button2.display(width*0.75, height*0.34+height*0.185/2, (width*0.245)/2-width*0.002, height*0.185/2, 5, "1000");
+  button3.update();
+  button3.display(width*0.75+width*0.245/2+width*0.002, height*0.34, width*0.245/2-width*0.002, height*0.185/2, 5, "0.5 Hz");
+  button4.update();
+  button4.display(width*0.75+width*0.245/2+width*0.002, height*0.34+height*0.185/2, width*0.245/2-width*0.002, height*0.185/2, 5, "0.05 HZ");
 }
 
 void mouseReleased() {
   handle.releaseEvent();
+  if (button1.press || button2.press) {
+    button1.releaseEvent(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185/2);
+    button2.releaseEvent(width*0.75, height*0.34+height*0.185/2, (width*0.245)/2-width*0.002, height*0.185/2);
+  }
+
+  if (button3.press || button4.press) {
+    button3.releaseEvent(width*0.75+width*0.245/2+width*0.002, height*0.34, width*0.245/2-width*0.002, height*0.185/2);
+    button4.releaseEvent(width*0.75+width*0.245/2+width*0.002, height*0.34+height*0.185/2, width*0.245/2-width*0.002, height*0.185/2);
+  }
+}
+
+void mousePressed() {
+/*  button1.pressedEvent(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185/2); 
+  button2.pressedEvent(width*0.75, height*0.34+height*0.185/2, (width*0.245)/2-width*0.002, height*0.185/2);
+  button3.pressedEvent(width*0.75+width*0.245/2+width*0.002, height*0.34, width*0.245/2-width*0.002, height*0.185/2);
+  button4.pressedEvent(width*0.75+width*0.245/2+width*0.002, height*0.34+height*0.185/2, width*0.245/2-width*0.002, height*0.185/2);*/
+  button1.pressedEvent(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185/2); 
+  button2.pressedEvent(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185/2);
+  button3.pressedEvent(width*0.75+width*0.245/2+width*0.002, height*0.34, width*0.245/2-width*0.002, height*0.185/2);
+  button4.pressedEvent(width*0.75+width*0.245/2+width*0.002, height*0.34, width*0.245/2-width*0.002, height*0.185/2);
 }
 
 void checkConnection() {
-  int aux=0;
   while (true) {
     if (serialInited) {
       println(port.last());
@@ -140,11 +177,21 @@ void header() {
 //Muestra los cuadrados laterales
 void squares() {
   fill(0);
-  stroke(254);
-  rect(width*0.75, height*0.060, width*0.245, height*0.23, 5);
-  rect(width*0.75, height*0.296, width*0.245, height*0.23, 5);
+  stroke(255);
   rect(width*0.75, height*0.532, width*0.245, height*0.23, 5);
   rect(width*0.75, height*0.767, width*0.245, height*0.23, 5);
+  rect(width*0.75, height*0.060, width*0.245, height*0.23, 5);
+
+  fill(0);
+   rect(width*0.75+width*0.245/2+width*0.002, height*0.296, width*0.245/2-width*0.002, height*0.10, 5);
+  rect(width*0.75, height*0.296, (width*0.245)/2-width*0.002, height*0.10, 5);
+  // line(width*0.75, height*0.296+height*0.23/2, width*0.75+width*0.245, height*0.296+height*0.23/2);
+  fill(255);
+  textFont(BPMFont, width*0.019);
+  text("F -3dB", width*0.94, height*0.31);
+  text("Ganancia", width*0.81, height*0.31);
+
+  text("Notch", width*0.81, height*0.58);
 }
 
 
@@ -167,6 +214,9 @@ void time() {
 
 //Lee los valores del puerto serie
 void ECGdisplay() {
+  int valTemp=0;
+  int counter=0;
+  int RR=0;
   if (serialInited) {
     while (port.available() >= 3) {
       if (port.read() == 0xff) {
@@ -174,6 +224,14 @@ void ECGdisplay() {
       }
     }
   }
+  /*  if (val>handle.trigger && val>valTemp) {
+   valTemp=val;
+   } else if (valTemp > handle.trigger && val < valTemp) {
+   RR=counter;
+   counter=0;
+   }
+   counter++;
+   //  println(RR);*/
   for (int i=0; i<width-1; i++) {
     values[i] = values[i+1];
   }

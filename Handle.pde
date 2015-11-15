@@ -54,8 +54,8 @@ class Handle {
       fill(255);
       textFont(myFont, height*0.03);
       textAlign(CENTER, CENTER);
-      text(trigger, width*0.5, boxy+2*sizey);
-       //<>//
+      text(floor(trigger), -boxx+width*0.7, boxy+2*sizey);
+       //<>// //<>// //<>//
       //
       noCursor();
     } else {
@@ -72,8 +72,6 @@ class Handle {
     sizex = isx;
     sizey = isy;
     //Linea barra
-
-    //Rectangulo barra
 
     if (over || press) {
       fill(255);
