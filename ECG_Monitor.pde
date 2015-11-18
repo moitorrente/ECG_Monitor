@@ -4,10 +4,11 @@ import processing.serial.*;
 Serial port;  // Create object from Serial class
 int val;      // Data received from the serial port
 int[] values;
-int valTemp=0;
+int valTemp, valMax=0;
 
 long oneHzSample=1000000/120;
 boolean serialInited=false;
+boolean up=false;
 Handle handle;
 Button button1, button2, button3, button4;
 
@@ -21,6 +22,10 @@ String heart="♥";
 float aux=0.5;//tweak
 boolean beat=true;
 int COM=0;
+int counter1=0;
+int counter2=0;
+int RR1=0;
+int RR2=0;
 
 
 
@@ -63,7 +68,7 @@ void draw() {
   //Mostrar señal ECG
   ECGdisplay();
 
-  //Actualizar y mostrar barra trigger
+  //Actualizar y mostrar baRR1a trigger
   handle.update(width*0.025-(width*0.010), height*0.06, width*0.01, height*0.01);
   handle.display(width*0.025-(width*0.010), height*0.06, width*0.01, height*0.01);
 
@@ -76,6 +81,19 @@ void draw() {
   button3.display(width*0.75+width*0.245/2+width*0.002, height*0.34, width*0.245/2-width*0.002, height*0.185/2, 5, "0.5 Hz");
   button4.update();
   button4.display(width*0.75+width*0.245/2+width*0.002, height*0.34+height*0.185/2, width*0.245/2-width*0.002, height*0.185/2, 5, "0.05 HZ");
+  
+  button1.release=true;
+  button3.release=true;
+
+  fill(255);
+  stroke(255);
+  if (up) {
+    textFont(BPMFont, width*0.024);
+    text("aRR1iba", width*0.5, height*0.5);
+  } else {
+    textFont(BPMFont, width*0.024);
+    text("abajo", width*0.5, height*0.5);
+  }
 }
 
 void mouseReleased() {
@@ -92,10 +110,10 @@ void mouseReleased() {
 }
 
 void mousePressed() {
-/*  button1.pressedEvent(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185/2); 
-  button2.pressedEvent(width*0.75, height*0.34+height*0.185/2, (width*0.245)/2-width*0.002, height*0.185/2);
-  button3.pressedEvent(width*0.75+width*0.245/2+width*0.002, height*0.34, width*0.245/2-width*0.002, height*0.185/2);
-  button4.pressedEvent(width*0.75+width*0.245/2+width*0.002, height*0.34+height*0.185/2, width*0.245/2-width*0.002, height*0.185/2);*/
+  /*  button1.pressedEvent(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185/2); 
+   button2.pressedEvent(width*0.75, height*0.34+height*0.185/2, (width*0.245)/2-width*0.002, height*0.185/2);
+   button3.pressedEvent(width*0.75+width*0.245/2+width*0.002, height*0.34, width*0.245/2-width*0.002, height*0.185/2);
+   button4.pressedEvent(width*0.75+width*0.245/2+width*0.002, height*0.34+height*0.185/2, width*0.245/2-width*0.002, height*0.185/2);*/
   button1.pressedEvent(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185/2); 
   button2.pressedEvent(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185/2);
   button3.pressedEvent(width*0.75+width*0.245/2+width*0.002, height*0.34, width*0.245/2-width*0.002, height*0.185/2);
@@ -105,7 +123,7 @@ void mousePressed() {
 void checkConnection() {
   while (true) {
     if (serialInited) {
-      println(port.last());
+      //   println(port.last());
       delay(2000);
       if (port.last() == -1) {
         port.stop();
@@ -152,7 +170,7 @@ void BPMDisplay() {
   text("BPM", width*0.79, height*0.21);
   textAlign(RIGHT, CENTER);
   textFont(BPMFont, width*0.092);
-  text(130, width*0.98, height*0.16);
+  text(RR1+RR2, width*0.98, height*0.16);
 }
 
 
@@ -183,7 +201,7 @@ void squares() {
   rect(width*0.75, height*0.060, width*0.245, height*0.23, 5);
 
   fill(0);
-   rect(width*0.75+width*0.245/2+width*0.002, height*0.296, width*0.245/2-width*0.002, height*0.10, 5);
+  rect(width*0.75+width*0.245/2+width*0.002, height*0.296, width*0.245/2-width*0.002, height*0.10, 5);
   rect(width*0.75, height*0.296, (width*0.245)/2-width*0.002, height*0.10, 5);
   // line(width*0.75, height*0.296+height*0.23/2, width*0.75+width*0.245, height*0.296+height*0.23/2);
   fill(255);
@@ -214,9 +232,7 @@ void time() {
 
 //Lee los valores del puerto serie
 void ECGdisplay() {
-  int valTemp=0;
-  int counter=0;
-  int RR=0;
+
   if (serialInited) {
     while (port.available() >= 3) {
       if (port.read() == 0xff) {
@@ -224,14 +240,38 @@ void ECGdisplay() {
       }
     }
   }
-  /*  if (val>handle.trigger && val>valTemp) {
-   valTemp=val;
-   } else if (valTemp > handle.trigger && val < valTemp) {
-   RR=counter;
-   counter=0;
-   }
-   counter++;
-   //  println(RR);*/
+
+
+
+
+  if (val>handle.triggerInt) {
+    if (val>valTemp) {
+      up=true;
+    } else {
+      up=false;
+    }
+  }
+
+
+  if (up) {
+    if (counter1>1) {
+      RR1=counter1;
+      println("RR1: "+RR1);
+    }
+    counter1=0;
+    counter2++;
+  } else {
+    
+    if(counter2>1){
+     RR2=counter2;
+     println("RR2: " + RR2);
+    }
+    counter1++;
+    counter2=0;
+  }
+
+  valTemp=val;
+
   for (int i=0; i<width-1; i++) {
     values[i] = values[i+1];
   }

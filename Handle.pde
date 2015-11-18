@@ -4,7 +4,7 @@ class Handle {
   float stretch;
   float sizex, sizey;
   float trigger=0;
-
+  int triggerInt=0;
   boolean over;
   boolean press;
   boolean locked=false;
@@ -29,7 +29,8 @@ class Handle {
       stretch = lock(mouseY-height*0.03-sizey/2, height*0.005-sizey/2, height*0.45-sizey/2);
   //    println("1: "+stretch);
   //    println(height*0.03-sizey/2);
-      trigger=abs((map(stretch, (height*0.03-sizey/2)*17.8, 0, 0, 1024)));
+      trigger=abs((map(stretch, (height*0.03-sizey/2)*17.8, 0, 0, 4096)));
+      triggerInt=floor(trigger);
     }
     overEvent();
     pressEvent();
