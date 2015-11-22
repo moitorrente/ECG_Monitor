@@ -4,7 +4,6 @@ class Button {
   float sizex, sizey;
   float trigger=0;
   int round;
-  int pair;
   String text;
 
   boolean over=false;
@@ -13,13 +12,12 @@ class Button {
   boolean locked=false;
   PFont buttonFont;
 
-  Button(float ix, float iy, float isx, float isy, int ir, int ip) {
+  Button(float ix, float iy, float isx, float isy, int ir) {
     x = ix;
     y = iy;
     sizex = isx;
     sizey = isy;
     round=ir;
-    pair=ip;
     buttonFont = createFont("Verdana", 32);
   }
 

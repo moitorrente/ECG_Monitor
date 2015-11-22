@@ -10,7 +10,7 @@ long oneHzSample=1000000/120;
 boolean serialInited=false;
 boolean up=false;
 Handle handle;
-Button button1, button2, button3, button4;
+Button button1, button2, button3, button4, notchButton;
 
 PFont myFont, timeFont, BPMFont;
 float shift=1;
@@ -38,20 +38,29 @@ void setup() {
   myFont = createFont("Verdana", 32);
   timeFont = createFont("S7display.ttf", 32);
   BPMFont = createFont("Calibri-Bold", 32);
+
+  //Thread para el parpadeo del corazón
   thread("timer");
+  //Thread para la reconexión automática
   thread("checkConnection");
-  handle = new Handle(width*0.025-(width*0.010), height*0.06, 0, width*0.01, height*0.01);
-  button1 = new Button(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185, 5, 1);
-  button2 = new Button(width*0.75, height*0.296, (width*0.245)/2-width*0.002, height*0.23, 5, 1);
-  button3 = new Button(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185, 5, 2);
-  button4 = new Button(width*0.75, height*0.296, (width*0.245)/2-width*0.002, height*0.23, 5, 2);
+
+
+  handle = new Handle(width*0.025-(width*0.010), height*0.06, 0, width*0.01, height*0.01);     //Handle del trigger
+  button1 = new Button(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185, 5); //Ganancia 100
+  button2 = new Button(width*0.75, height*0.296, (width*0.245)/2-width*0.002, height*0.23, 5); //Ganancia 1000
+  button3 = new Button(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185, 5); //Frecuencia 0.5Hz
+  button4 = new Button(width*0.75, height*0.296, (width*0.245)/2-width*0.002, height*0.23, 5); //Frecuencia 0.05Hz
+  notchButton = new Button(width*0.75, height*0.296, (width*0.245)/2-width*0.002, height*0.23, 5); //Botón Notch
+
+  //Estado inicial de los botones de switch de Ganancia y Frecuencia
+  button1.release=true;
+  button3.release=true;
+
   initSerial();
 }
 
 void draw() {
   background(0);
-  //Comprobar conexion serie
-  //checkConnection();
 
   //Mostrar header
   header();
@@ -68,11 +77,15 @@ void draw() {
   //Mostrar señal ECG
   ECGdisplay();
 
-  //Actualizar y mostrar baRR1a trigger
+  //Actualizar y mostrar barra trigger
   handle.update(width*0.025-(width*0.010), height*0.06, width*0.01, height*0.01);
   handle.display(width*0.025-(width*0.010), height*0.06, width*0.01, height*0.01);
 
   //Actualizar y mostrar los botones
+  updateButtons();
+}
+
+void updateButtons() {
   button1.update();
   button1.display(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185/2, 5, "100");
   button2.update();
@@ -81,39 +94,33 @@ void draw() {
   button3.display(width*0.75+width*0.245/2+width*0.002, height*0.34, width*0.245/2-width*0.002, height*0.185/2, 5, "0.5 Hz");
   button4.update();
   button4.display(width*0.75+width*0.245/2+width*0.002, height*0.34+height*0.185/2, width*0.245/2-width*0.002, height*0.185/2, 5, "0.05 HZ");
-  
-  button1.release=true;
-  button3.release=true;
-
-  fill(255);
-  stroke(255);
-  if (up) {
-    textFont(BPMFont, width*0.024);
-    text("aRR1iba", width*0.5, height*0.5);
-  } else {
-    textFont(BPMFont, width*0.024);
-    text("abajo", width*0.5, height*0.5);
-  }
+  notchButton.update();
+  notchButton.display(width*0.75, height*0.532, width*0.245/2-width*0.002, height*0.185/2, 5, "Notch");
 }
 
 void mouseReleased() {
+  //Control del handle del trigger
   handle.releaseEvent();
+
+  //Control del switch de Ganancia
   if (button1.press || button2.press) {
     button1.releaseEvent(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185/2);
     button2.releaseEvent(width*0.75, height*0.34+height*0.185/2, (width*0.245)/2-width*0.002, height*0.185/2);
   }
 
+  //Control del switch de Frecuencia
   if (button3.press || button4.press) {
     button3.releaseEvent(width*0.75+width*0.245/2+width*0.002, height*0.34, width*0.245/2-width*0.002, height*0.185/2);
     button4.releaseEvent(width*0.75+width*0.245/2+width*0.002, height*0.34+height*0.185/2, width*0.245/2-width*0.002, height*0.185/2);
   }
+
+  //Control del botón de Notch
+  if (notchButton.overRect(width*0.75, height*0.532, width*0.245/2-width*0.002, height*0.185/2)) {
+    notchButton.release=!notchButton.release;
+  }
 }
 
 void mousePressed() {
-  /*  button1.pressedEvent(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185/2); 
-   button2.pressedEvent(width*0.75, height*0.34+height*0.185/2, (width*0.245)/2-width*0.002, height*0.185/2);
-   button3.pressedEvent(width*0.75+width*0.245/2+width*0.002, height*0.34, width*0.245/2-width*0.002, height*0.185/2);
-   button4.pressedEvent(width*0.75+width*0.245/2+width*0.002, height*0.34+height*0.185/2, width*0.245/2-width*0.002, height*0.185/2);*/
   button1.pressedEvent(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185/2); 
   button2.pressedEvent(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185/2);
   button3.pressedEvent(width*0.75+width*0.245/2+width*0.002, height*0.34, width*0.245/2-width*0.002, height*0.185/2);
@@ -123,7 +130,6 @@ void mousePressed() {
 void checkConnection() {
   while (true) {
     if (serialInited) {
-      //   println(port.last());
       delay(2000);
       if (port.last() == -1) {
         port.stop();
@@ -150,7 +156,7 @@ void initSerial() {
 }
 
 
-//Thread de calculo de tiempo para mostrar los BPM del simbolo del corazón
+//Thread de calculo de tiempo para mostrar los BPM del símbolo del corazón
 void timer() {
   while (true) {  
     delay(500);
@@ -196,20 +202,17 @@ void header() {
 void squares() {
   fill(0);
   stroke(255);
-  rect(width*0.75, height*0.532, width*0.245, height*0.23, 5);
+  //  rect(width*0.75, height*0.532, width*0.245, height*0.23, 5);
   rect(width*0.75, height*0.767, width*0.245, height*0.23, 5);
   rect(width*0.75, height*0.060, width*0.245, height*0.23, 5);
 
   fill(0);
   rect(width*0.75+width*0.245/2+width*0.002, height*0.296, width*0.245/2-width*0.002, height*0.10, 5);
   rect(width*0.75, height*0.296, (width*0.245)/2-width*0.002, height*0.10, 5);
-  // line(width*0.75, height*0.296+height*0.23/2, width*0.75+width*0.245, height*0.296+height*0.23/2);
   fill(255);
   textFont(BPMFont, width*0.019);
   text("F -3dB", width*0.94, height*0.31);
   text("Ganancia", width*0.81, height*0.31);
-
-  text("Notch", width*0.81, height*0.58);
 }
 
 
@@ -241,34 +244,7 @@ void ECGdisplay() {
     }
   }
 
-
-
-
-  if (val>handle.triggerInt) {
-    if (val>valTemp) {
-      up=true;
-    } else {
-      up=false;
-    }
-  }
-
-
-  if (up) {
-    if (counter1>1) {
-      RR1=counter1;
-      println("RR1: "+RR1);
-    }
-    counter1=0;
-    counter2++;
-  } else {
-    
-    if(counter2>1){
-     RR2=counter2;
-     println("RR2: " + RR2);
-    }
-    counter1++;
-    counter2=0;
-  }
+  signalTimeCounter();
 
   valTemp=val;
 
@@ -280,10 +256,39 @@ void ECGdisplay() {
   values[width-1] = val;
 
   stroke(#19AF3A);
-  //strokeWeight(2);
   //Muestra la señal ECG
   for (int x=1*round(width*0.28); x<width-(28); x++) {
     line((width-x), (height-aux*height-getY(values[x-1])), (width-1-x), height-aux*height-getY(values[x]));
+  }
+}
+
+//Contador de tiempo entre pico y pico según el valor del trigger
+void signalTimeCounter() {
+  //Comprueba la pendiente de la señal
+  if (val>handle.triggerInt) {
+    if (val>valTemp) {
+      up=true;
+    } else {
+      up=false;
+    }
+  }
+
+  //Contador de tiempo ascendente
+  if (up) {
+    if (counter1>1) {
+      RR1=counter1;
+      println("RR1: "+RR1);
+    }
+    counter1=0;
+    counter2++;
+  } else {
+    //Countador de tiempo descendente
+    if (counter2>1) {
+      RR2=counter2;
+      println("RR2: " + RR2);
+    }
+    counter1++;
+    counter2=0;
   }
 }
 

@@ -27,8 +27,6 @@ class Handle {
     sizey = isy;
     if (press) {
       stretch = lock(mouseY-height*0.03-sizey/2, height*0.005-sizey/2, height*0.45-sizey/2);
-  //    println("1: "+stretch);
-  //    println(height*0.03-sizey/2);
       trigger=abs((map(stretch, (height*0.03-sizey/2)*17.8, 0, 0, 4096)));
       triggerInt=floor(trigger);
     }
@@ -50,19 +48,15 @@ class Handle {
       locked = true;
       stroke(255);
       line(boxx, boxy+sizey/2, boxx+width*0.700, boxy+sizey/2);
-      
-      //
       fill(255);
       textFont(myFont, height*0.03);
       textAlign(CENTER, CENTER);
       text(floor(trigger), -boxx+width*0.7, boxy+2*sizey);
-       //<>// //<>// //<>//
-      //
       noCursor();
     } else {
       cursor();
       press = false;
-    }
+    } //<>//
   }
 
   void releaseEvent() {
@@ -99,8 +93,6 @@ class Handle {
 
   float lock(float val, float minv, float maxv) { 
     float aux;
-    // return  min(max(floor(val), floor(minv)), floor(maxv));
-
     if (val > minv) {
       aux = val;
     } else {
