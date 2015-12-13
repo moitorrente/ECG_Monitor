@@ -6,11 +6,23 @@ int val;      // Data received from the serial port
 int[] values;
 int valTemp, valMax=0;
 
+
+//Variables filtro
+int[] yvals;
+int[] yvals2;
+float[] coefficients = {-0.000487378497927441, -0.000630782362712316, -0.00104199475618086, -0.00168679002205603, -0.00250577433562457, -0.00342031518478175, -0.00434060926332915, -0.00517503135464734, -0.00583975823542259, -0.00626762428509976, 1.06279211659556, -0.00626762428509976, -0.00583975823542259, -0.00517503135464734, -0.00434060926332915, -0.00342031518478175, -0.00250577433562457, -0.00168679002205603, -0.00104199475618086, -0.000630782362712316, -0.000487378497927441};
+int coefNum = 20;
+int[] filter;
+
+
 long oneHzSample=1000000/120;
 boolean serialInited=false;
 boolean up=false;
 Handle handle;
 Button button1, button2, button3, button4, notchButton;
+Dropdown dropdown;
+String[] serialPorts = new String[Serial.list().length];
+
 
 PFont myFont, timeFont, BPMFont;
 float shift=1;
@@ -34,7 +46,7 @@ void setup() {
   size(1200, 800);
   surface.setResizable(true);
   smooth();
-  values = new int[4000];
+  //  values = new int[2800];
   myFont = createFont("Verdana", 32);
   timeFont = createFont("S7display.ttf", 32);
   BPMFont = createFont("Calibri-Bold", 32);
@@ -44,7 +56,7 @@ void setup() {
   //Thread para la reconexión automática
   thread("checkConnection");
 
-
+  dropdown = new Dropdown(width*0.8, height*0.09, width*0.007);
   handle = new Handle(width*0.025-(width*0.010), height*0.06, 0, width*0.01, height*0.01);     //Handle del trigger
   button1 = new Button(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185, 5); //Ganancia 100
   button2 = new Button(width*0.75, height*0.296, (width*0.245)/2-width*0.002, height*0.23, 5); //Ganancia 1000
@@ -56,7 +68,10 @@ void setup() {
   button1.release=true;
   button3.release=true;
 
-  initSerial();
+  //Valores para mostrar la señal
+  yvals = new int[2800];  
+  yvals2 = new int[2800];
+  filter = new int[coefNum];
 }
 
 void draw() {
@@ -83,7 +98,12 @@ void draw() {
 
   //Actualizar y mostrar los botones
   updateButtons();
+
+
+  dropdown.display(width*0.98, height*0.020, width*0.011);
+  dropdown.displayPorts();
 }
+
 
 void updateButtons() {
   button1.update();
@@ -117,6 +137,13 @@ void mouseReleased() {
   //Control del botón de Notch
   if (notchButton.overRect(width*0.75, height*0.532, width*0.245/2-width*0.002, height*0.185/2)) {
     notchButton.release=!notchButton.release;
+  }
+
+
+  if (dropdown.overTriangle()) {
+    println(Serial.list().length);
+    println(Serial.list());
+    dropdown.released=!dropdown.released;
   }
 }
 
@@ -189,12 +216,13 @@ void header() {
   textFont(myFont, height*0.041);
   textAlign(CENTER, CENTER);
   text("ECG Monitor", width*0.5, height*0.020);
+  noStroke();
   if (serialInited) {
     fill(#0AFF39);
   } else {
     fill(#FF0000);
   }
-  ellipse(width*0.99, height*0.025, height*0.02, height*0.02);
+  ellipse(width*0.97, height*0.025, height*0.02, height*0.02);
 }
 
 
@@ -248,18 +276,50 @@ void ECGdisplay() {
 
   valTemp=val;
 
-  for (int i=0; i<width-1; i++) {
-    values[i] = values[i+1];
+  //Nuevo
+  //----------------------------------------------------------------------------------------------------------
+  for (int i = 1; i < width; i++) { 
+    yvals[i-1] = yvals[i];
+    yvals2[i-1] = yvals2[i];
+  } 
+
+  if (notchButton.release)
+  {
+    yvals[width-1] = notchFilter(val);
+  } else {
+    yvals2[width-1] = delayFilter(val);
   }
 
-  //Shift
-  values[width-1] = val;
-
-  stroke(#19AF3A);
-  //Muestra la señal ECG
-  for (int x=1*round(width*0.28); x<width-(28); x++) {
-    line((width-x), (height-aux*height-getY(values[x-1])), (width-1-x), height-aux*height-getY(values[x]));
+  for (int i=1; i<width; i++) {
+    strokeWeight(1);
+    stroke(#19AF3A);
+    if (notchButton.release)
+    {
+      line(width-i+1, height/10+yvals[i-1]/4, width-i, height/10+yvals[i]/4);
+    } else {
+      line(width-i+1, height/10+yvals2[i-1]/4, width-i, height/10+yvals2[i]/4);
+    }
+    stroke(#CE1F1F);
   }
+
+  /* Antiguo!!! 
+   ---------------------------------------------------------------------------------------------------------------  
+   for (int i=0; i<width-1; i++) {
+   values[i] = values[i+1];
+   }
+   
+   //Shift
+   values[width-1] = val;
+   
+   
+   stroke(#19AF3A);
+   //Muestra la señal ECG
+   for (int x=1*round(width*0.28); x<width-(28); x++) {
+   line((width-x), (height-aux*height-getY(values[x-1])), (width-1-x), height-aux*height-getY(values[x]));
+   
+   }
+   -----------------------------------------------------------------------------------------------------------------
+   */
 }
 
 //Contador de tiempo entre pico y pico según el valor del trigger
@@ -295,4 +355,32 @@ void signalTimeCounter() {
 //Devuelve el valor de la posicion Y de la señal ECG
 int getY(int val) {
   return (int)(val / 4095.0f * height*0.42) - 1;
+}
+
+int notchFilter(int val) {
+  float temp=0;
+
+  for (int i = coefNum-1; i > 0; i--) {
+    filter[i] = filter[i-1];
+  }
+
+  filter[0]=val;
+
+  for (int i = coefNum-1; i> 0; i--) {
+    temp=temp+filter[i]*coefficients[i];
+    println(temp);
+  }
+  return int(temp/3);
+}
+
+int delayFilter(int val) {
+  float temp=0;
+
+  for (int i = coefNum-1; i > 0; i--) {
+    filter[i] = filter[i-1];
+  }
+
+  filter[0]=val;
+
+  return int(filter[coefNum-1]/3);
 }
