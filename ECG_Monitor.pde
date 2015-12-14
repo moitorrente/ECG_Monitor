@@ -39,7 +39,8 @@ int counter2=0;
 int RR1=0;
 int RR2=0;
 
-
+int[] RR;
+int BPM=0;
 
 void setup() {
   //fullScreen();
@@ -72,6 +73,7 @@ void setup() {
   yvals = new int[2800];  
   yvals2 = new int[2800];
   filter = new int[coefNum];
+  RR = new int[8];
 }
 
 void draw() {
@@ -203,7 +205,7 @@ void BPMDisplay() {
   text("BPM", width*0.79, height*0.21);
   textAlign(RIGHT, CENTER);
   textFont(BPMFont, width*0.092);
-  text(RR1+RR2, width*0.98, height*0.16);
+  text(BPM, width*0.98, height*0.16);
 }
 
 
@@ -283,16 +285,23 @@ void ECGdisplay() {
     yvals2[i-1] = yvals2[i];
   } 
 
-  if (notchButton.release)
-  {
-    yvals[width-1] = notchFilter(val);
-  } else {
-    yvals2[width-1] = delayFilter(val);
-  }
 
-  for (int i=1; i<width; i++) {
-    strokeWeight(1);
-    stroke(#19AF3A);
+  yvals[width-1] = notchFilter(val);
+
+  yvals2[width-1] = delayFilter(val);
+
+
+  for (int i=320; i<width*0.95; i++) {
+   
+    if(i==width*0.95-1){
+      strokeWeight(5);
+      stroke(255);
+    }else{
+       strokeWeight(1);
+        stroke(#19AF3A);
+    }
+    
+   
     if (notchButton.release)
     {
       line(width-i+1, height/10+yvals[i-1]/4, width-i, height/10+yvals[i]/4);
@@ -300,6 +309,15 @@ void ECGdisplay() {
       line(width-i+1, height/10+yvals2[i-1]/4, width-i, height/10+yvals2[i]/4);
     }
     stroke(#CE1F1F);
+    strokeWeight(1);
+  }
+  
+  float increment = (320-width*0.95)/7;
+  
+  
+  for (int i=0; i<7; i++){
+    line(width+i*increment-320, height*0.7+RR[i]*2,width+increment*(i+1)-320, height*0.7+RR[i+1]*2);
+    
   }
 
   /* Antiguo!!! 
@@ -324,6 +342,7 @@ void ECGdisplay() {
 
 //Contador de tiempo entre pico y pico según el valor del trigger
 void signalTimeCounter() {
+  int sumaRR=0;
   //Comprueba la pendiente de la señal
   if (val>handle.triggerInt) {
     if (val>valTemp) {
@@ -346,7 +365,24 @@ void signalTimeCounter() {
     if (counter2>1) {
       RR2=counter2;
       println("RR2: " + RR2);
+
+
+      if (RR1+RR2<BPM*3 || RR[0]==0) {
+
+        for (int i=0; i<7; i++) {
+          RR[i]=RR[i+1];
+        }
+        
+        RR[7]=RR1+RR2;
+
+        for (int i=0; i<8; i++) {
+          sumaRR = sumaRR + RR[i]; 
+          println(i+" "+RR[i]);
+        }
+        BPM=sumaRR/8;
+      }
     }
+
     counter1++;
     counter2=0;
   }
@@ -368,7 +404,7 @@ int notchFilter(int val) {
 
   for (int i = coefNum-1; i> 0; i--) {
     temp=temp+filter[i]*coefficients[i];
-    println(temp);
+    //    println(temp);
   }
   return int(temp/3);
 }
