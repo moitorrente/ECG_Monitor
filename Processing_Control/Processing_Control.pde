@@ -39,6 +39,9 @@ int counter2=0;
 int RR1=0;
 int RR2=0;
 
+char led0 = 'A';
+char led1 = 'C';
+
 int[] RR;
 int BPM=0;
 
@@ -125,16 +128,35 @@ void mouseReleased() {
   handle.releaseEvent();
 
   //Control del switch de Ganancia
+
+
   if (button1.press || button2.press) {
     button1.releaseEvent(width*0.75, height*0.34, (width*0.245)/2-width*0.002, height*0.185/2);
     button2.releaseEvent(width*0.75, height*0.34+height*0.185/2, (width*0.245)/2-width*0.002, height*0.185/2);
+
+    if (button1.release) {
+      port.write('A');
+    } else {
+      port.write('B');
+    }
+
   }
 
   //Control del switch de Frecuencia
   if (button3.press || button4.press) {
     button3.releaseEvent(width*0.75+width*0.245/2+width*0.002, height*0.34, width*0.245/2-width*0.002, height*0.185/2);
     button4.releaseEvent(width*0.75+width*0.245/2+width*0.002, height*0.34+height*0.185/2, width*0.245/2-width*0.002, height*0.185/2);
+
+    if (button3.release) {
+      port.write('C');
+    } else {
+      port.write('D');
+    }
+
   }
+
+
+
 
   //Control del botón de Notch
   if (notchButton.overRect(width*0.75, height*0.532, width*0.245/2-width*0.002, height*0.185/2)) {
@@ -292,16 +314,16 @@ void ECGdisplay() {
 
 
   for (int i=320; i<width*0.95; i++) {
-   
-    if(i==width*0.95-1){
+
+    if (i==width*0.95-1) {
       strokeWeight(5);
       stroke(255);
-    }else{
-       strokeWeight(1);
-        stroke(#19AF3A);
+    } else {
+      strokeWeight(1);
+      stroke(#19AF3A);
     }
-    
-   
+
+
     if (notchButton.release)
     {
       line(width-i+1, height/10+yvals[i-1]/4, width-i, height/10+yvals[i]/4);
@@ -311,13 +333,12 @@ void ECGdisplay() {
     stroke(#CE1F1F);
     strokeWeight(1);
   }
-  
+
   float increment = (320-width*0.95)/7;
-  
-  
-  for (int i=0; i<7; i++){
-    line(width+i*increment-320, height*0.7+RR[i]*2,width+increment*(i+1)-320, height*0.7+RR[i+1]*2);
-    
+
+
+  for (int i=0; i<7; i++) {
+    line(width+i*increment-320, height*0.7+RR[i]*2, width+increment*(i+1)-320, height*0.7+RR[i+1]*2);
   }
 
   /* Antiguo!!! 
@@ -372,7 +393,7 @@ void signalTimeCounter() {
         for (int i=0; i<7; i++) {
           RR[i]=RR[i+1];
         }
-        
+
         RR[7]=RR1+RR2;
 
         for (int i=0; i<8; i++) {
